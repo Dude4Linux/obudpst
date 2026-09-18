@@ -19,3 +19,7 @@ _CPack_Packages/
 install_manifest.txt
 *.deb
 *.rpm
+
+# apk feed signing key: private key must never be committed
+packaging/openwrt/keys/*.pem
+!packaging/openwrt/keys/*.pub.pem

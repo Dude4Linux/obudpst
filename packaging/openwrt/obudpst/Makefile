@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=obudpst
 PKG_VERSION:=9.0.0
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/Dude4Linux/obudpst.git
@@ -23,6 +23,10 @@ define Package/obudpst
   CATEGORY:=Network
   TITLE:=Open Broadband-UDP Speed Test (OB-UDPST)
   URL:=https://github.com/BroadbandForum/obudpst
+  # OpenSSL >= 3.0 turns on AUTH_KEY_ENABLE (HMAC-SHA256 setup/activation
+  # authentication, -a key / -K keyfile); without it the server accepts
+  # unauthenticated tests from anyone who can reach the control port.
+  DEPENDS:=+libopenssl
 endef
 
 define Package/obudpst/description

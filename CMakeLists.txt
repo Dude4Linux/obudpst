@@ -27,7 +27,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 cmake_minimum_required(VERSION 3.5...3.10)
-project(OB-UDPST)
+# Keep this in sync with SOFTWARE_VER in udpst.h
+project(OB-UDPST VERSION 9.0.0)
 if(${CMAKE_VERSION} VERSION_GREATER "3.3.0")
         cmake_policy(SET CMP0057 NEW)
 endif()
@@ -101,3 +102,38 @@ target_link_libraries(udpst ${libraries} m)
 if (CMAKE_GENERATOR MATCHES "Ninja")
     set(CMAKE_PLATFORM_HAS_INSTALLNAME 1)
 endif()
+
+# Installed as a private binary, put on PATH via update-alternatives (see
+# packaging/) so a future alternate implementation (e.g. a Rust rewrite) can
+# be registered under the same "udpst" alternative name.
+install(TARGETS udpst RUNTIME DESTINATION lib/obudpst)
+
+# ---- Packaging (CPack: .deb / .rpm) ----
+set(CPACK_PACKAGE_NAME "obudpst")
+set(CPACK_PACKAGE_VENDOR "Broadband Forum")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Open Broadband-UDP Speed Test (OB-UDPST)")
+set(CPACK_PACKAGE_DESCRIPTION "Open Broadband-UDP Speed Test (OB-UDPST) is a client/server\nutility for measuring maximum IP-layer capacity per BBF TR-471 and IETF RFC 9097/9946.")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/BroadbandForum/obudpst")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
+set(CPACK_GENERATOR "DEB;RPM")
+
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Broadband Forum")
+set(CPACK_DEBIAN_PACKAGE_SECTION "net")
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
+    "${CMAKE_CURRENT_SOURCE_DIR}/packaging/deb/postinst"
+    "${CMAKE_CURRENT_SOURCE_DIR}/packaging/deb/prerm"
+)
+
+set(CPACK_RPM_PACKAGE_LICENSE "BSD-3-Clause")
+set(CPACK_RPM_PACKAGE_GROUP "Applications/Internet")
+set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/packaging/rpm/postinst.sh")
+set(CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/packaging/rpm/prerm.sh")
+
+if(OPENSSL_FOUND)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libssl3 (>= 3.0.0)")
+    set(CPACK_RPM_PACKAGE_REQUIRES "openssl-libs >= 3.0.0")
+endif()
+
+include(CPack)

@@ -1,6 +1,31 @@
 #!/bin/sh
+# postinst script for obudpst
 set -e
 
-update-alternatives --install /usr/bin/udpst udpst /usr/lib/obudpst/udpst 50
+. /usr/share/debconf/confmodule
+
+OURS=/usr/lib/obudpst/udpst
+
+case "$1" in
+    configure)
+        # Register under the shared "udpst" alternative (link
+        # /usr/libexec/udpst/udpst, behind udpst-common's /usr/bin/udpst
+        # wrapper; udpst-rs registers at priority 60). When another
+        # implementation is already the default and this is our first
+        # registration, the debconf answer from `config` decides whether to
+        # take over. A selection saved while migrating from the old layout
+        # wins over both. Output goes to stderr: stdout belongs to debconf.
+        takeover=no
+        if db_get obudpst/set-default && [ "$RET" = true ]; then
+            takeover=yes
+        fi
+        db_stop
+
+        . /usr/share/udpst/functions.sh
+        udpst_alt_register "$OURS" 50 "$takeover"
+        # Restart an enabled udpst.service on the new binary.
+        udpst_service_refresh
+        ;;
+esac
 
 exit 0

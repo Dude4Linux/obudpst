@@ -1,0 +1,19 @@
+#!/bin/sh
+# debconf config script for obudpst
+set -e
+
+. /usr/share/debconf/confmodule
+
+OURS=/usr/lib/obudpst/udpst
+
+# Ask only when this package is not yet registered under the "udpst"
+# alternative and a different implementation currently provides it.
+current=$(readlink /etc/alternatives/udpst 2>/dev/null || true)
+if [ -n "$current" ] && [ "$current" != "$OURS" ] && \
+   ! update-alternatives --list udpst 2>/dev/null | grep -qxF "$OURS"; then
+    db_subst obudpst/set-default current "$current"
+    db_input high obudpst/set-default || true
+    db_go || true
+fi
+
+exit 0

@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=obudpst
 PKG_VERSION:=9.0.0
-PKG_RELEASE:=2
+PKG_RELEASE:=4
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/Dude4Linux/obudpst.git
@@ -18,6 +18,11 @@ PKG_INSTALL:=1
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
 
+# CMakeLists.txt treats OpenSSL as optional and quietly builds without
+# authentication when it is missing (an SDK without libopenssl staged); fail
+# the build instead of shipping a server that accepts anyone.
+CMAKE_OPTIONS += -DCMAKE_REQUIRE_FIND_PACKAGE_OpenSSL=TRUE
+
 define Package/obudpst
   SECTION:=net
   CATEGORY:=Network
@@ -26,7 +31,11 @@ define Package/obudpst
   # OpenSSL >= 3.0 turns on AUTH_KEY_ENABLE (HMAC-SHA256 setup/activation
   # authentication, -a key / -K keyfile); without it the server accepts
   # unauthenticated tests from anyone who can reach the control port.
-  DEPENDS:=+libopenssl
+  DEPENDS:=+libopenssl +udpst-common
+  # The shared "udpst" alternative behind udpst-common's /usr/bin/udpst
+  # wrapper; udpst-rs registers at 60 and is the default when both are
+  # installed.
+  ALTERNATIVES:=50:/usr/libexec/udpst/udpst:/usr/lib/obudpst/udpst
 endef
 
 define Package/obudpst/description
@@ -35,25 +44,28 @@ define Package/obudpst/description
   with rate feedback in the opposite direction.
 endef
 
-# Real binary lives in a private directory; /usr/bin/udpst is a symlink
-# maintained by postinst/prerm so a future alternate build (e.g. a Rust
-# implementation) can claim the same link without file conflicts.
+# The real binary lives in a private directory. The SDK's default
+# postinst/prerm maintain the alternative link from ALTERNATIVES (OpenWrt has
+# no manual selection: pick an implementation with UDPST_IMPL in
+# /etc/default/udpst instead).
 define Package/obudpst/install
 	$(INSTALL_DIR) $(1)/usr/lib/obudpst
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/obudpst/udpst $(1)/usr/lib/obudpst/udpst
 endef
 
+# Restart an enabled server on the new binary, or on removal fall back to
+# udpst-rs or stop (fail closed). udpst-common may be removed first.
 define Package/obudpst/postinst
 #!/bin/sh
 [ -n "$$IPKG_INSTROOT" ] && exit 0
-ln -sf /usr/lib/obudpst/udpst /usr/bin/udpst
+. /usr/share/udpst/functions.sh && udpst_service_refresh
 exit 0
 endef
 
-define Package/obudpst/prerm
+define Package/obudpst/postrm
 #!/bin/sh
 [ -n "$$IPKG_INSTROOT" ] && exit 0
-[ "$$(readlink /usr/bin/udpst)" = "/usr/lib/obudpst/udpst" ] && rm -f /usr/bin/udpst
+[ -r /usr/share/udpst/functions.sh ] && . /usr/share/udpst/functions.sh && udpst_service_refresh
 exit 0
 endef
 

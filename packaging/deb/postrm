@@ -1,0 +1,26 @@
+#!/bin/sh
+# postrm script for obudpst
+set -e
+
+case "$1" in
+    remove|purge)
+        # An enabled udpst.service falls back to the other implementation,
+        # or stops (fail closed) when none is left. udpst-common may already
+        # be gone.
+        if [ -r /usr/share/udpst/functions.sh ]; then
+            . /usr/share/udpst/functions.sh
+            udpst_service_refresh
+        fi
+        # Forget the answer so a later reinstall asks again.
+        if [ -e /usr/share/debconf/confmodule ]; then
+            . /usr/share/debconf/confmodule
+            if [ "$1" = purge ]; then
+                db_purge
+            else
+                db_fset obudpst/set-default seen false || true
+            fi
+        fi
+        ;;
+esac
+
+exit 0

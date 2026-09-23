@@ -103,9 +103,9 @@ if (CMAKE_GENERATOR MATCHES "Ninja")
     set(CMAKE_PLATFORM_HAS_INSTALLNAME 1)
 endif()
 
-# Installed as a private binary, put on PATH via update-alternatives (see
-# packaging/) so a future alternate implementation (e.g. a Rust rewrite) can
-# be registered under the same "udpst" alternative name.
+# Installed as a private binary and registered under the shared "udpst"
+# alternative (link /usr/libexec/udpst/udpst, priority 50; udpst-rs is 60),
+# behind udpst-common's /usr/bin/udpst wrapper. See packaging/.
 install(TARGETS udpst RUNTIME DESTINATION lib/obudpst)
 
 # ---- Packaging (CPack: .deb / .rpm) ----
@@ -118,22 +118,38 @@ set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/BroadbandForum/obudpst")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 set(CPACK_GENERATOR "DEB;RPM")
+# Package revision, kept in sync with udpst-rs and udpst-common (9.0.0-4).
+set(OBUDPST_PACKAGE_RELEASE 4)
+set(CPACK_DEBIAN_PACKAGE_RELEASE ${OBUDPST_PACKAGE_RELEASE})
+set(CPACK_RPM_PACKAGE_RELEASE ${OBUDPST_PACKAGE_RELEASE})
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
+# The wrapper, config, auth keys, udpst user and server unit.
+set(UDPST_COMMON_DEP "udpst-common (= ${PROJECT_VERSION}-${OBUDPST_PACKAGE_RELEASE})")
+set(UDPST_COMMON_REQ "udpst-common = ${PROJECT_VERSION}-${OBUDPST_PACKAGE_RELEASE}")
 
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Broadband Forum")
 set(CPACK_DEBIAN_PACKAGE_SECTION "net")
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
+    "${CMAKE_CURRENT_SOURCE_DIR}/packaging/deb/config"
+    "${CMAKE_CURRENT_SOURCE_DIR}/packaging/deb/templates"
     "${CMAKE_CURRENT_SOURCE_DIR}/packaging/deb/postinst"
     "${CMAKE_CURRENT_SOURCE_DIR}/packaging/deb/prerm"
+    "${CMAKE_CURRENT_SOURCE_DIR}/packaging/deb/postrm"
 )
 
 set(CPACK_RPM_PACKAGE_LICENSE "BSD-3-Clause")
 set(CPACK_RPM_PACKAGE_GROUP "Applications/Internet")
 set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/packaging/rpm/postinst.sh")
 set(CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/packaging/rpm/prerm.sh")
+set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/packaging/rpm/postrm.sh")
+set(CPACK_RPM_POST_TRANS_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/packaging/rpm/posttrans.sh")
 
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "debconf (>= 0.5) | debconf-2.0, ${UDPST_COMMON_DEP}")
+set(CPACK_RPM_PACKAGE_REQUIRES "${UDPST_COMMON_REQ}")
 if(OPENSSL_FOUND)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libssl3 (>= 3.0.0)")
-    set(CPACK_RPM_PACKAGE_REQUIRES "openssl-libs >= 3.0.0")
+    string(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS ", libssl3 (>= 3.0.0)")
+    string(APPEND CPACK_RPM_PACKAGE_REQUIRES ", openssl-libs >= 3.0.0")
 endif()
 
 include(CPack)

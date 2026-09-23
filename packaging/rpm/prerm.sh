@@ -1,12 +1,4 @@
-#!/bin/sh
-set -e
-
-if command -v update-alternatives >/dev/null 2>&1; then
-    ALT_CMD=update-alternatives
-elif command -v alternatives >/dev/null 2>&1; then
-    ALT_CMD=alternatives
-else
-    exit 0
+if [ "$1" = "0" ]; then
+    . /usr/share/udpst/functions.sh
+    udpst_alt_unregister /usr/lib/obudpst/udpst
 fi
-
-"$ALT_CMD" --remove udpst /usr/lib/obudpst/udpst

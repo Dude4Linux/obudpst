@@ -1,9 +1,11 @@
 #!/bin/sh
+# prerm script for obudpst
 set -e
 
 case "$1" in
     remove|deconfigure)
-        update-alternatives --remove udpst /usr/lib/obudpst/udpst
+        . /usr/share/udpst/functions.sh
+        udpst_alt_unregister /usr/lib/obudpst/udpst
         ;;
 esac
 

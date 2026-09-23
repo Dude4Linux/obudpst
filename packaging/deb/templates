@@ -1,0 +1,12 @@
+Template: obudpst/set-default
+Type: boolean
+Default: false
+Description: Make obudpst the default udpst?
+ Another udpst implementation is already installed and currently provides
+ /usr/bin/udpst:
+ .
+ ${current}
+ .
+ Choose yes to point /usr/bin/udpst at obudpst now, or no to keep the
+ current default. Both stay installed, and the choice can be changed later
+ with: update-alternatives --config udpst

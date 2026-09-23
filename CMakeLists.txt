@@ -118,8 +118,8 @@ set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/BroadbandForum/obudpst")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 set(CPACK_GENERATOR "DEB;RPM")
-# Package revision, kept in sync with udpst-rs and udpst-common (9.0.0-4).
-set(OBUDPST_PACKAGE_RELEASE 4)
+# Package revision, kept in sync with udpst-rs and udpst-common (9.0.0-5).
+set(OBUDPST_PACKAGE_RELEASE 5)
 set(CPACK_DEBIAN_PACKAGE_RELEASE ${OBUDPST_PACKAGE_RELEASE})
 set(CPACK_RPM_PACKAGE_RELEASE ${OBUDPST_PACKAGE_RELEASE})
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)

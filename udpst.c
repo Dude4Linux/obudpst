@@ -140,6 +140,7 @@ struct repository repo;                       // Repository of global data
 struct connection *conn;                      // Connection table (array)
 static volatile sig_atomic_t sig_alrm = 0;    // Interrupt indicator
 static volatile sig_atomic_t sig_exit = 0;    // Interrupt indicator
+static volatile sig_atomic_t sig_stop = 0;    // Stopped by a signal (not an error)
 struct epoll_event epoll_events[MAX_EPOLL_EVENTS];
 char *boolText[]    = {"Disabled", "Enabled"};
 char *rateAdjAlgo[] = {"B", "C"}; // Aligned to CHTA_RA_ALGO_x
@@ -771,6 +772,13 @@ int main(int argc, char **argv) {
         }
 
         //
+        // A server stopped by a signal (e.g. SIGTERM from a service manager) is
+        // a clean shutdown, not STATUS_ERROR
+        //
+        if (repo.isServer && sig_stop && appstatus == STATUS_ERROR)
+                appstatus = STATUS_SUCCESS;
+
+        //
         // Close files and epoll FD
         //
         if (logfilefd >= 0)
@@ -834,6 +842,7 @@ void signal_exit(int signal) {
         // Set exit signal indicator
         //
         sig_exit = TRUE;
+        sig_stop = TRUE;
 
         return;
 }
